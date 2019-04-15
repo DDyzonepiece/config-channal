@@ -67,7 +67,7 @@ def merge_cellr(file_path, aa, sheet_index=0):
 	workbook.save('merge.xlsx')
 
 file_path=r'config.xlsx'
-aa=[0,1,2,3]
+aa=[0,1,2,3,4,5,6]
 
 merge_cellr(file_path, aa)
 print(111)
