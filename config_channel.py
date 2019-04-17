@@ -1,6 +1,9 @@
 import docx
 import numpy as np
 import pandas as pd
+import openpyxl
+from openpyxl.styles import Color, PatternFill, Font, Border
+from openpyxl.styles import colors
 
 def psi_out(x):
 	psi=(int(x)-101.25)/6.895
@@ -28,6 +31,10 @@ file_name_2=r'引脚定义_01.docx'
 file1=docx.Document(file_name_1)
 file2=docx.Document(file_name_2)
 print(file2.paragraphs[12].text)
+#用字典类似于json形式去装配置好的表格
+#excel是输出的表现形式，内存里用字典来表达数据关系
+table_dir_1={}
+
 table=file1.tables[1]
 table_list_1 = []
 range_list=[]
@@ -65,7 +72,7 @@ num_rows=len(table_list_1)
 mm=[]
 nn=[]
 num_mn=[]
-
+#之后要改成split分割形式不然通道是2位数就没法用
 #将统计的一些参数分别放入列表中
 for i in range(1,num_rows):
 	j=table_list_1[i][3][0]
@@ -78,17 +85,20 @@ for i in range(1,num_rows):
 
 num_sum=sum(num_mn)#计算增加后的总行数
 print(num_sum)
-
+#var_config是用来存放配置好的变量名列表
 var_config=[]
+#var_config_2dim是以2维列表的方式来存配置好变量名
+var_config_2dim=[]
 #插空行填补
 for i in range(num_rows-1):
-	
+	temp_list=[]
 	for j in range(mm[i]):
 		for k in range(nn[i]):
 			
 			var_t=table_list_1[i+1][1]+'_%d'%(j+1)+'%d'%(k+1)
+			temp_list.append(var_t)
 			var_config.append(var_t)
-
+	var_config_2dim.append(temp_list)
 
 #table_list_1[0].append('量程（表压）')
 max_range_list=[]
@@ -110,8 +120,26 @@ for i,item in enumerate(psi_list):
 	if table_list_1[i+1][1][0]!='P':
 		psi_list[i]=' '
 
+value_element=[table_list_1[0][0],
+			   table_list_1[0][2],
+			   table_list_1[0][3],
+			   table_list_1[0][4],
+			   table_list_1[0][5],
+			   '量程（表压）',
+			   '通道配置参数']
 
+for i,item in enumerate(table_list_1[1:]):
 
+	table_dir_1[item[1]]={table_list_1[0][0]:item[0], \
+						  table_list_1[0][2]: item[2],\
+						  table_list_1[0][3]: item[3], \
+						  table_list_1[0][4]: item[4], \
+						  table_list_1[0][5]: item[5], \
+						  '量程（表压）':psi_list[i],\
+						  '通道配置参数':var_config_2dim[i],\
+						  }
+
+print(table_dir_1)
 # psi_list_extend=[]
 # for i in range(len(psi_list)):
 # 	item=[psi_list[i]]*num_mn[i]
@@ -138,7 +166,7 @@ for i in range(num_rows-1):
 df1=pd.DataFrame(table_list_1[1:num_sum+1],columns=table_list_1[0])
 
 
-print(psi_list)
+#print(psi_list)
 
 #增加dataframe中的列
 df1['量程（表压）（psi）']=psi_list
@@ -147,3 +175,25 @@ df1['编号']=var_seq
 
 df1.to_excel(r'config.xlsx', index=None, columns=None)
 #print(df1)
+
+
+#开始处理excel并从中提取信息
+excel_file_path=r"2007a_test.xlsx"
+workbook = openpyxl.load_workbook(excel_file_path)
+# workbook = openpyxl.Workbook(path)
+name_list = workbook.sheetnames
+sheet_index=0
+worksheet = workbook[name_list[sheet_index]]
+num_r=worksheet.max_row
+print(num_r)
+
+empty_list=[]
+whiterFill = PatternFill('solid',fgColor='FFFFFF',bgColor='FFFFFF')
+print(worksheet.cell(row=2, column=10).fill)
+for i in range(1,num_r+1):
+	temp=worksheet.cell(row=i, column=10).fill
+	if temp==whiterFill:
+		empty_list.append(i)
+print(len(empty_list))
+print(empty_list)
+print(worksheet.cell(row=529,column=10).value)

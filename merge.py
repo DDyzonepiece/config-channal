@@ -5,17 +5,17 @@ from openpyxl.utils import *
 
 #合并单元格函数file_path是文件路径，aa是需要合并的列索引列表,
 #sheet_index是需要处理的列表索引不给的话默认第一个
-def merge_cellr(file_path, aa, sheet_index=0):
+def merge_cellr(file_path, colums, sheet_index=0):
 	#加载已经存在的excel
 	workbook = openpyxl.load_workbook(file_path) 
 	# workbook = openpyxl.Workbook(path)
 	name_list = workbook.sheetnames
 	# worksheet = workbook.get_sheet_by_name(name_list[0])  #最新版本已经不能使用这种方法
 	worksheet = workbook[name_list[sheet_index]]
-	num_c=len(aa)
+	num_c=len(colums)
 	print(num_c)
 	num_r=worksheet.max_row
-	for i in aa:
+	for i in colums:
 		unempty_index=[]
 		
 		for j in range(num_r):
@@ -35,7 +35,7 @@ def merge_cellr(file_path, aa, sheet_index=0):
 	#worksheet.merge_cells(start_row=2, start_column=1, end_row=13, end_column=1)
 	#将需要合并单元格的列数转换成字符串
 	bb=[]
-	for i in aa:
+	for i in colums:
 		temp=get_column_letter(i+1)
 		bb.append(temp)
 	print(bb)
