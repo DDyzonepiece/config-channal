@@ -337,18 +337,45 @@ for psi_key,psi_value in psi_dir.items():
 			#exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
 			worksheet.cell(row=psi_dir[psi_key][i], column=10).value=item
 			changed_list.append(psi_dir[psi_key][i])
+
 			#worksheet[exl]=item
 		#print(exl)
-
+config_list=[]
 for item in changed_list:
 	worksheet.cell(row=item, column=12).value = worksheet.cell(row=item, column=9).value\
 												+'_'+worksheet.cell(row=item, column=10).value
 
+	config_list.append((worksheet.cell(row=item, column=10).value,
+						worksheet.cell(row=item, column=9).value,
+						worksheet.cell(row=item, column=8).value))
+
+
+def config_channel(config_list):
+	excel_file_path=r"merge.xlsx"
+	workbook = openpyxl.load_workbook(excel_file_path)
+	name_list = workbook.sheetnames
+	sheet_index = 0
+	worksheet = workbook[name_list[sheet_index]]
+	worksheet['J1']='PINOUT'
+	worksheet['K1'] = 'Channel Number'
+	num_r = worksheet.max_row
+
+	for i in range(1,num_r+1):
+
+
+		for item in config_list:
+			#print(item)
+			if worksheet.cell(row=i, column=8).value==item[0]:
+				worksheet.cell(row=i, column=10).value=item[1]
+				worksheet.cell(row=i, column=11).value = item[2]
+				config_list.remove(item)
+				break
+
+	workbook.save('config_channel.xlsx')
 
 
 
 
-
-
-print(len(empty_list))
-workbook.save('test.xlsx')
+config_channel(config_list)
+#print(len(empty_list))
+#workbook.save('test.xlsx')
