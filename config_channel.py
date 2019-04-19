@@ -2,12 +2,24 @@ import docx
 import numpy as np
 import pandas as pd
 import openpyxl
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles import colors
 
-def psi_out(x):
-	psi=(int(x)-101.25)/6.895
-	print(psi)
+
+"""
+Information:
+	将输入的最大压力变为对应PSI
+Parameters:
+    p_input-输入的最大压力
+Returns:
+    各个对应的PSI
+Modify:
+    2019-4-18
+"""
+def psi_out(p_input):
+	psi=(int(p_input)-101.25)/6.895
+	#print(psi)
 	if psi<5:
 		return 5
 	elif 5<=psi<15:
@@ -24,6 +36,58 @@ def psi_out(x):
 		return 750
 	else:
 		return 0
+"""
+Information: 
+	统计出合并单元格的范围,可以选定第几列
+Parameters:
+    worksheet-需要输入的表名
+    column-需要检查的合并的列数，没有则检查所以有列
+Returns:
+    merged_list-合并的单元格的坐标元组
+Modify:
+    2019-4-18
+"""
+def get_merged_range(worksheet,column=None):
+	m_list = worksheet.merged_cells
+
+	# 合并单元格的起始行坐标、终止行坐标
+	merged_list=[]
+	for m_area in m_list:
+		temp_tuple = (m_area.min_row, m_area.max_row, m_area.min_col, m_area.max_col)
+		merged_list.append(temp_tuple)
+
+	if column!=None:
+		temp_list=[]
+		for item in merged_list:
+
+			if item[2]==column and item[3]==column:
+				temp_list.append(item)
+		merged_list=temp_list
+
+	return  merged_list
+
+"""
+Information: 
+	统计所选的那一列所有空的单元格坐标
+Parameters:
+    worksheet-需要输入的表名
+    column-需要检查空的列数
+Returns:
+    empty_list-空的单元格坐标，认定None和只有一个空格都是空
+Modify:
+    2019-4-18
+"""
+def get_empty_list(worksheet,column):
+	num_r = worksheet.max_row
+	empty_list = []
+	for i in range(1, num_r + 1):
+		temp = worksheet.cell(row=i, column=column).value
+		if temp == None or temp == ' ':
+			empty_list.append(i)
+
+	return empty_list
+
+
 
 
 file_name_1=r'测试要求.docx'
@@ -106,7 +170,7 @@ max_range_list=[]
 for item in range_list[1:]:
 	temp=[]
 	temp=item.split('~')
-	print(temp)
+	#print(temp)
 	max_range_list.append(temp[1])
 
 print(max_range_list)
@@ -114,13 +178,13 @@ print(max_range_list)
 #psi_list
 
 psi_list=[psi_out(x) for x in max_range_list]
-print(psi_list)
+#print(psi_list)
 #将非压力的参数改为空格
 for i,item in enumerate(psi_list):
 	if table_list_1[i+1][1][0]!='P':
 		psi_list[i]=' '
-
-value_element=[table_list_1[0][0],
+print(psi_list)
+value_columns=[table_list_1[0][0],
 			   table_list_1[0][2],
 			   table_list_1[0][3],
 			   table_list_1[0][4],
@@ -139,7 +203,7 @@ for i,item in enumerate(table_list_1[1:]):
 						  '通道配置参数':var_config_2dim[i],\
 						  }
 
-print(table_dir_1)
+#print(table_dir_1)
 # psi_list_extend=[]
 # for i in range(len(psi_list)):
 # 	item=[psi_list[i]]*num_mn[i]
@@ -185,15 +249,106 @@ name_list = workbook.sheetnames
 sheet_index=0
 worksheet = workbook[name_list[sheet_index]]
 num_r=worksheet.max_row
-print(num_r)
+#print(num_r)
+#print(worksheet[10].value)
 
-empty_list=[]
-whiterFill = PatternFill('solid',fgColor='FFFFFF',bgColor='FFFFFF')
-print(worksheet.cell(row=2, column=10).fill)
-for i in range(1,num_r+1):
-	temp=worksheet.cell(row=i, column=10).fill
-	if temp==whiterFill:
-		empty_list.append(i)
+merged_list=get_merged_range(worksheet,column=10)
+empty_list=get_empty_list(worksheet,10)
+temp_list = empty_list.copy()#这个非常重要否则迭代会出现问题
 print(len(empty_list))
-print(empty_list)
-print(worksheet.cell(row=529,column=10).value)
+for m_item in merged_list:
+	print(m_item)
+	for e_item in temp_list:
+		if e_item>=m_item[0] and e_item<=m_item[1]:
+			empty_list.remove(e_item)
+
+
+
+#newlist=[]
+# for m_item in merged_list:
+# 	newlist += [ i for i in empty_list if i>= m_item[0]and i<=m_item[1]]
+#
+# list1 = [i for i in empty_list if i not in newlist]
+
+print(len(empty_list))
+#print(empty_list)
+
+"""
+Information: 
+	获取各个PSI大小的位子的字典
+Parameters:
+    worksheet-需要输入的表名
+    column-需要获取的位子列数，默认是3
+Returns:
+    psi_dir-包含各个psi位子的字典
+Modify:
+    2019-4-19
+"""
+def get_psi_dir(worksheet,column=3):
+	psi_dir={}
+	psi_5_list=[]
+	psi_15_list=[]
+	psi_30_list=[]
+	psi_100_list=[]
+	psi_250_list=[]
+	psi_500_list=[]
+	psi_750_list=[]
+	for item in empty_list:
+		temp = worksheet.cell(row=item, column=column).value
+		if temp=='± 5 psi':
+			psi_5_list.append(item)
+		elif temp=='± 15 psi':
+			psi_15_list.append(item)
+		elif temp=='± 30 psi':
+			psi_30_list.append(item)
+		elif temp=='100 psi':
+			psi_100_list.append(item)
+		elif temp=='250 psi':
+			psi_250_list.append(item)
+		elif temp=='500 psi':
+			psi_500_list.append(item)
+		elif temp=='750 psi':
+			psi_750_list.append(item)
+	psi_dir['psi_5_list']=psi_5_list
+	psi_dir['psi_15_list'] = psi_15_list
+	psi_dir['psi_30_list'] = psi_30_list
+	psi_dir['psi_100_list'] = psi_100_list
+	psi_dir['psi_250_list'] = psi_250_list
+	psi_dir['psi_500_list'] = psi_500_list
+	psi_dir['psi_750_list'] = psi_750_list
+
+	return psi_dir
+
+psi_dir=get_psi_dir(worksheet,column=3)
+
+psi_kinds=[5,15,30,100,250,500,750]
+temp_i=0
+changed_list=[]
+for psi_key,psi_value in psi_dir.items():
+	var_psi=[]
+	for key,value in table_dir_1.items():
+		is_pressure=value['量程（表压）']
+		if is_pressure==psi_kinds[temp_i]:
+			var_psi.extend(value['通道配置参数'])
+	temp_i+=1
+	#print(var_psi)
+	if len(var_psi)<=len(psi_dir[psi_key]) and len(var_psi)!=0:
+		for i,item in enumerate(var_psi):
+			#exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
+			worksheet.cell(row=psi_dir[psi_key][i], column=10).value=item
+			changed_list.append(psi_dir[psi_key][i])
+			#worksheet[exl]=item
+		#print(exl)
+
+for item in changed_list:
+	worksheet.cell(row=item, column=12).value = worksheet.cell(row=item, column=9).value\
+												+'_'+worksheet.cell(row=item, column=10).value
+
+
+
+
+
+
+
+print(len(empty_list))
+workbook.save('test.xlsx')
