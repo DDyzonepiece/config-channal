@@ -2,15 +2,16 @@ import docx
 import numpy as np
 import pandas as pd
 import openpyxl
+import datetime
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles import colors
 
 
 """
-Information:
+Info:
 	将输入的最大压力变为对应PSI
-Parameters:
+Args:
     p_input-输入的最大压力
 Returns:
     各个对应的PSI
@@ -37,11 +38,11 @@ def psi_out(p_input):
 	else:
 		return 0
 """
-Information: 
+Info: 
 	统计出合并单元格的范围,可以选定第几列
-Parameters:
+Args:
     worksheet-需要输入的表名
-    column-需要检查的合并的列数，没有则检查所以有列
+    column-需要检查的合并的列数，没有则检查所有列
 Returns:
     merged_list-合并的单元格的坐标元组
 Modify:
@@ -67,9 +68,9 @@ def get_merged_range(worksheet,column=None):
 	return  merged_list
 
 """
-Information: 
+Info: 
 	统计所选的那一列所有空的单元格坐标
-Parameters:
+Args:
     worksheet-需要输入的表名
     column-需要检查空的列数
 Returns:
@@ -94,7 +95,7 @@ file_name_1=r'测试要求.docx'
 file_name_2=r'引脚定义_01.docx'
 file1=docx.Document(file_name_1)
 file2=docx.Document(file_name_2)
-print(file2.paragraphs[12].text)
+#print(file2.paragraphs[12].text)
 #用字典类似于json形式去装配置好的表格
 #excel是输出的表现形式，内存里用字典来表达数据关系
 table_dir_1={}
@@ -111,8 +112,8 @@ for row in table.rows:  # 读每行
 		row_content.append(c)
 	# 用二维列表去表示读取的表格
 	table_list_1.append(row_content)
-print(table_list_1[2][0])
-print(len(file2.tables))
+# print(table_list_1[2][0])
+# print(len(file2.tables))
 table2=file2.tables[0]
 table_list_2 = []
 #读取引脚定义的表格
@@ -130,7 +131,7 @@ for item in table_list_2:
 	var_seq+=temp
 
 #print(var_seq)
-print(len(var_seq))
+#print(len(var_seq))
 #统计行数和配置参数
 num_rows=len(table_list_1)
 mm=[]
@@ -173,7 +174,7 @@ for item in range_list[1:]:
 	#print(temp)
 	max_range_list.append(temp[1])
 
-print(max_range_list)
+#print(max_range_list)
 
 #psi_list
 
@@ -183,7 +184,7 @@ psi_list=[psi_out(x) for x in max_range_list]
 for i,item in enumerate(psi_list):
 	if table_list_1[i+1][1][0]!='P':
 		psi_list[i]=' '
-print(psi_list)
+#print(psi_list)
 value_columns=[table_list_1[0][0],
 			   table_list_1[0][2],
 			   table_list_1[0][3],
@@ -255,9 +256,9 @@ num_r=worksheet.max_row
 merged_list=get_merged_range(worksheet,column=10)
 empty_list=get_empty_list(worksheet,10)
 temp_list = empty_list.copy()#这个非常重要否则迭代会出现问题
-print(len(empty_list))
+#print(len(empty_list))
 for m_item in merged_list:
-	print(m_item)
+	#print(m_item)
 	for e_item in temp_list:
 		if e_item>=m_item[0] and e_item<=m_item[1]:
 			empty_list.remove(e_item)
@@ -270,13 +271,13 @@ for m_item in merged_list:
 #
 # list1 = [i for i in empty_list if i not in newlist]
 
-print(len(empty_list))
+#print(len(empty_list))
 #print(empty_list)
 
 """
-Information: 
-	获取各个PSI大小的位子的字典
-Parameters:
+Info: 
+	获取提供的配置表中各个PSI大小的位子的字典
+Args:
     worksheet-需要输入的表名
     column-需要获取的位子列数，默认是3
 Returns:
@@ -284,7 +285,7 @@ Returns:
 Modify:
     2019-4-19
 """
-def get_psi_dir(worksheet,column=3):
+def get_psi_dir(worksheet,empty_list,column=3):
 	psi_dir={}
 	psi_5_list=[]
 	psi_15_list=[]
@@ -319,27 +320,233 @@ def get_psi_dir(worksheet,column=3):
 
 	return psi_dir
 
-psi_dir=get_psi_dir(worksheet,column=3)
+
+psi_dir=get_psi_dir(worksheet,empty_list,column=3)
+
 
 psi_kinds=[5,15,30,100,250,500,750]
-temp_i=0
-changed_list=[]
-for psi_key,psi_value in psi_dir.items():
-	var_psi=[]
-	for key,value in table_dir_1.items():
-		is_pressure=value['量程（表压）']
-		if is_pressure==psi_kinds[temp_i]:
-			var_psi.extend(value['通道配置参数'])
-	temp_i+=1
-	#print(var_psi)
-	if len(var_psi)<=len(psi_dir[psi_key]) and len(var_psi)!=0:
-		for i,item in enumerate(var_psi):
-			#exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
-			worksheet.cell(row=psi_dir[psi_key][i], column=10).value=item
-			changed_list.append(psi_dir[psi_key][i])
+# curr_time=datetime.datetime.now()
+# curr_time=curr_time.strftime('%Y-%m-%d %H:%M:%S')
+# text=curr_time+'\n'
+# text+='配置表中压力测点数量统计:\n'
+# for i,value in enumerate(psi_dir.values()):
+# 	text += "%d psi:%d \n" % (psi_kinds[i], len(value))
 
-			#worksheet[exl]=item
-		#print(exl)
+
+
+"""
+Info: 
+	统计需求定义表中和提供通道的表格的统计信息
+Args:
+    psi_dir-
+    table_dir_1-
+    psi_kinds-
+Returns:
+    psi_supply_count-
+    psi_demand_count-
+Modify:
+    2019-4-28
+"""
+def psi_count_show(psi_dir,table_dir_1,psi_kinds):
+	#psi_kinds = [5, 15, 30, 100, 250, 500, 750]
+	psi_supply_count=[]
+	psi_demand_count=[]
+	for i, value in enumerate(psi_dir.values()):
+		psi_supply_count.append(len(value))
+		#text += "%d psi:%d \n" % (psi_kinds[i], len(value))
+
+	for item in psi_kinds:
+		#temp_list=[]
+		count_all=0
+		count_acc=0
+		for g_value in table_dir_1.values():
+
+			if g_value['量程（表压）']==item:
+				count_all+=len(g_value['通道配置参数'])
+
+				try:
+
+					acc=g_value['总精度要求']
+
+					acc=acc[1:-1]
+					#print(acc)
+
+
+					acc=float(acc)
+
+
+					if acc<=0.35:
+						count_acc+=len(g_value['通道配置参数'])
+				except Exception as e:
+
+					print("压力精度设置有问题，请检查压力精度设置表格")
+
+		psi_demand_count.append((count_all,count_acc))
+
+	return psi_supply_count,psi_demand_count
+
+psi_supply_count,psi_demand_count=psi_count_show(psi_dir,table_dir_1,psi_kinds)
+
+#print(psi_demand_count)
+#print(table_dir_1)
+curr_time=datetime.datetime.now()
+curr_time=curr_time.strftime('%Y-%m-%d %H:%M:%S')
+text=curr_time+'\n'
+print('配置表中压力测点数量统计:')
+print(psi_supply_count)
+print('测试要求中压力测点数量统计(所有数量，不可拓展数量):')
+print(psi_demand_count)
+
+
+
+"""
+Info: 
+	判断是否需要拓展和拓展后通道数是否足够
+Args:
+    psi_supply_count-
+    psi_demand_count-
+    psi_kinds-
+    text-
+Returns:
+	no_expand_psi-
+	expand_psi_enough-
+	extra_number-
+	text-
+Modify:
+    2019-4-29
+"""
+def config_check(psi_supply_count,psi_demand_count,psi_kinds,text):
+
+	no_expand_psi=True
+	expand_psi_enough=True
+	extra_number = [0] * len(psi_kinds)  # 用来存放每次多出来的需要拓展的数量
+	text += "按照不扩大量程方式配置，配置表中数量满足配置条件 \n"
+	for i,item in enumerate(psi_demand_count):
+
+		if item[0]<=psi_supply_count[i]:
+			text+="%d psi 配置表中数量满足配置条件 \n"%(psi_kinds[i])
+
+		else:
+			text += "%d psi 配置表中数量不满足配置条件 \n" % (psi_kinds[i])
+			no_expand_psi=False
+
+	if no_expand_psi==False:
+
+
+		while True:
+			whether_expand = input('按照对应量程以无法满足，是否按照扩大量程方式配置?  y/n \n')
+			if whether_expand=='n':
+				print('选择不扩大量程配置，提供的配置通道表不满足条件，请增加对应缺少的通道数')
+				break
+			elif whether_expand=='y':
+				print('已选择扩大量程方式配置，只有精度大于0.35%的变量才会使用扩大量程')
+				break
+			else:
+				print('输入错误，请重新输入！')
+
+
+
+
+		for  i,item in enumerate(psi_demand_count):
+
+			if  i==0:
+				if item[0]<=psi_supply_count[i]:
+					text += "%d psi 配置表中对应量程数量满足配置条件,不需要拓展 \n" % (psi_kinds[i])
+
+
+
+				elif item[1] < psi_supply_count[i] :
+					text += "%d psi 配置表中数量能满足测试要求中精度小于0.35%的数量，但需要%d个扩大量程 \n"\
+							% (psi_kinds[i],item[1]- psi_supply_count[i])
+					extra_number[i]=item[1]- psi_supply_count[i]
+
+				else:
+
+					text += "%d psi 配置表中精数量小于测试要求中精度小于0.35%的数量，少%d个 \n" \
+							% (psi_kinds[i], item[1] - psi_supply_count[i])
+					extra_number[i] = item[0] - item[1]
+					expand_psi_enough = False
+
+
+			if i>0:
+
+				if item[0]+extra_number[i-1]<= psi_supply_count[i] :
+
+					text+="%d psi 配置表中数量满足拓展后配置条件 \n"%(psi_kinds[i])
+
+				elif item[1]+extra_number[i-1] <=psi_supply_count[i] :
+
+					extra_number[i]=item[0]+extra_number[i-1]-psi_supply_count[i]
+					text += "%d psi 配置表中数量满足拓展后配置条件，但需要有%d个去拓展到更大量程\n" \
+							% (psi_kinds[i],item[0]+extra_number[i-1]-psi_supply_count[i])
+
+				else :
+
+					extra_number[i] =item[0]-item[1]
+					text += "%d psi 配置表中数量不满足拓展后配置条件，需要有增加%d个通道\n" \
+							% (psi_kinds[i], item[1] + extra_number[i-1] - psi_supply_count[i])
+					expand_psi_enough = False
+	return no_expand_psi,expand_psi_enough,extra_number,text
+
+
+no_expand_psi,expand_psi_enough,extra_number,text=config_check(psi_supply_count,psi_demand_count,psi_kinds,text)
+
+
+
+if no_expand_psi:
+
+	temp_i=0
+	changed_list=[]
+	for psi_key,psi_value in psi_dir.items():
+		var_psi=[]
+		#第一个循环将需要配置的压力参数全部提出来
+		for key,value in table_dir_1.items():
+			is_pressure=value['量程（表压）']
+			if is_pressure==psi_kinds[temp_i]:
+				var_psi.extend(value['通道配置参数'])
+
+
+		temp_i+=1
+
+		if len(var_psi)<=len(psi_dir[psi_key]) and len(var_psi)!=0:
+
+			#这个循环就是将需要填充的变量全部放进表格中，按psi匹配
+			for i,item in enumerate(var_psi):
+				#exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
+				worksheet.cell(row=psi_dir[psi_key][i], column=10).value=item
+				changed_list.append(psi_dir[psi_key][i])
+
+elif expand_psi_enough:
+	temp_i = 0
+	changed_list = []
+	for psi_key, psi_value in psi_dir.items():
+		var_psi = []
+		# 第一个循环将需要配置的压力参数全部提出来
+		for key, value in table_dir_1.items():
+			is_pressure = value['量程（表压）']
+			if is_pressure == psi_kinds[temp_i]:
+				var_psi.extend(value['通道配置参数'])
+
+		temp_i += 1
+
+		if len(var_psi) <= len(psi_dir[psi_key]) and len(var_psi) != 0:
+
+			# 这个循环就是将需要填充的变量全部放进表格中，按psi匹配
+			for i, item in enumerate(var_psi):
+				# exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
+				worksheet.cell(row=psi_dir[psi_key][i], column=10).value = item
+				changed_list.append(psi_dir[psi_key][i])
+
+
+
+
+
+
+
+
+
+
+
 config_list=[]
 for item in changed_list:
 	worksheet.cell(row=item, column=12).value = worksheet.cell(row=item, column=9).value\
@@ -350,6 +557,16 @@ for item in changed_list:
 						worksheet.cell(row=item, column=8).value))
 
 
+"""
+Info: 
+	将给的配置表格中的匹配好的提出放到自己表格中
+Args:
+    config_list-包含'PINOUT'，'Channel Number'和'测点名称'的元组列表
+Returns:
+    保存一个config_channel.xlsx文件
+Modify:
+    2019-4-19
+"""
 def config_channel(config_list):
 	excel_file_path=r"merge.xlsx"
 	workbook = openpyxl.load_workbook(excel_file_path)
@@ -374,8 +591,7 @@ def config_channel(config_list):
 	workbook.save('config_channel.xlsx')
 
 
-
-
 config_channel(config_list)
 #print(len(empty_list))
 #workbook.save('test.xlsx')
+print(text)
