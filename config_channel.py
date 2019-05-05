@@ -491,7 +491,7 @@ def config_check(psi_supply_count,psi_demand_count,psi_kinds,text):
 
 no_expand_psi,expand_psi_enough,extra_number,text=config_check(psi_supply_count,psi_demand_count,psi_kinds,text)
 
-
+print(extra_number)
 
 if no_expand_psi:
 
@@ -518,24 +518,41 @@ if no_expand_psi:
 
 elif expand_psi_enough:
 	temp_i = 0
-	changed_list = []
+	changed_list = []#用来记录这次配置的通道的位置
+	var_add_list=[]#用来存放上一层扩展后放在本层的变量
+	var_remove_list=[]#用来存放本层需要剔除的，需要拓展到下一层的变量
 	for psi_key, psi_value in psi_dir.items():
-		var_psi = []
-		# 第一个循环将需要配置的压力参数全部提出来
-		for key, value in table_dir_1.items():
-			is_pressure = value['量程（表压）']
-			if is_pressure == psi_kinds[temp_i]:
-				var_psi.extend(value['通道配置参数'])
+		#第一次只用判断本层就可以了，之后需要判断上一层是否有拓展和本层是否有拓展
+		if temp_i==0:
+			var_psi = []
+			# 第一个循环将需要配置的压力参数全部提出来
+			for key, value in table_dir_1.items():
+				is_pressure = value['量程（表压）']
+				if is_pressure == psi_kinds[temp_i]:
+					var_psi.extend(value['通道配置参数'])
 
-		temp_i += 1
+			temp_i += 1
 
-		if len(var_psi) <= len(psi_dir[psi_key]) and len(var_psi) != 0:
+			if len(var_psi) <= len(psi_dir[psi_key]) and len(var_psi) != 0:
 
-			# 这个循环就是将需要填充的变量全部放进表格中，按psi匹配
-			for i, item in enumerate(var_psi):
-				# exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
-				worksheet.cell(row=psi_dir[psi_key][i], column=10).value = item
-				changed_list.append(psi_dir[psi_key][i])
+				# 这个循环就是将需要填充的变量全部放进表格中，按psi匹配
+				for i, item in enumerate(var_psi):
+					# exl=get_column_letter(10)+str(psi_dir['psi_30_list'][i])
+					worksheet.cell(row=psi_dir[psi_key][i], column=10).value = item
+					changed_list.append(psi_dir[psi_key][i])
+		else:
+			var_extra = []  # 为上次超出的需要拓展变量名，优先级最大
+			var_psi_35= []#提取出精度小于0.35%的变量名，优先级最小
+			var_psi_no35=[]#提取出精度大于0.35%的变量名，优先级最差
+
+			# 第一个循环将需要配置的压力参数全部提出来
+			for key, value in table_dir_1.items():
+				is_pressure = value['量程（表压）']
+				if is_pressure == psi_kinds[temp_i]:
+					var_psi.extend(value['通道配置参数'])
+
+
+
 
 
 
